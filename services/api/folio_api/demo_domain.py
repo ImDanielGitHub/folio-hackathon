@@ -12,6 +12,12 @@ from datetime import UTC, date, datetime
 from uuid import uuid4
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from folio_api.bank_fixture import (
+    confirm_bank_fixture,
+    confirmed_fixture_transactions,
+    load_bank_fixture,
+)
+
 
 class DomainError(ValueError):
     pass
@@ -82,6 +88,7 @@ def initial_state():
         "version": 1,
         "transactions": rows,
         "annotations": {},
+        "bankImport": None,
         "goals": [],
         "memory": [],
         "activities": [],
@@ -149,7 +156,9 @@ def validate_month(month):
 
 def effective_transactions(state):
     rows = []
-    for transaction in state["transactions"]:
+    for transaction in [
+        *state["transactions"], *confirmed_fixture_transactions(state.get("bankImport"))
+    ]:
         row = {**transaction, **state["annotations"].get(transaction["id"], {})}
         # Review status is editable; bank posting status is immutable source evidence.
         row["postingStatus"] = transaction.get("postingStatus", transaction.get("status", "posted"))
@@ -161,6 +170,7 @@ def is_posted(row):
     return (
         not row.get("pending", False)
         and not row.get("removed", False)
+        and row.get("status") not in ("staged", "quarantined")
         and row.get("postingStatus", row.get("status")) not in ("pending", "removed")
     )
 
@@ -428,13 +438,24 @@ def apply_action(state, action, payload, *, now=None):
     value = deepcopy(state)
     snapshot = {key: deepcopy(state[key]) for key in ("annotations", "goals", "memory")}
     snapshot["capacityScenario"] = deepcopy(state.get("capacityScenario"))
-    ids = {t["id"] for t in state["transactions"]}
+    snapshot["phoneScenario"] = deepcopy(state.get("phoneScenario"))
+    snapshot["bankImport"] = deepcopy(state.get("bankImport"))
+    effective_rows = effective_transactions(state)
+    ids = {t["id"] for t in effective_rows}
     if action == "undo":
         if not value["history"]:
             raise DomainError("There is no reversible action.")
         prior = value["history"].pop()
         value.update(prior["before"])
         label = f"Undid: {prior['label']}"
+    elif action == "load_bank_fixture":
+        value["bankImport"] = load_bank_fixture(state.get("bankImport"), payload)
+        if state.get("bankImport") is not None:
+            return value
+        label = "Staged original fictional bank fixture for review; no bank API connected"
+    elif action == "confirm_bank_fixture":
+        value["bankImport"] = confirm_bank_fixture(state.get("bankImport"), payload)
+        label = "Imported one explicitly reviewed fictional transaction"
     elif action == "classify":
         chosen = payload.get("ids")
         purpose = payload.get("purpose")
@@ -472,7 +493,7 @@ def apply_action(state, action, payload, *, now=None):
         pct = payload.get("businessPercent")
         if not isinstance(tid, str) or tid not in ids:
             raise DomainError("Transaction not found in this workspace.")
-        t = next(t for t in state["transactions"] if t["id"] == tid)
+        t = next(t for t in effective_rows if t["id"] == tid)
         split_amount(t["amountMinor"], pct)
         value["annotations"][tid] = {
             **value["annotations"].get(tid, {}),
@@ -481,6 +502,10 @@ def apply_action(state, action, payload, *, now=None):
             "status": "confirmed",
         }
         label = f"Split one transaction {pct}/{100 - pct}"
+    elif action == "save_phone_scenario":
+        from folio_api.phone_offers import phone_settings
+        value["phoneScenario"] = phone_settings(payload)
+        label = "Saved fictional phone-plan requirements"
     elif action == "save_capacity_scenario":
         value["capacityScenario"] = capacity_settings(state, payload)
         label = "Saved a hypothetical capacity scenario"

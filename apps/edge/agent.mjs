@@ -1,3 +1,4 @@
+import {phoneComparison} from './phone-offers.mjs';
 import {compareMonths,effectiveTransactions,scopedAmount,goalBaseline,DomainError,calculateCapacity} from './domain.mjs';
 const MODEL='nvidia/nemotron-3-super-120b-a12b';
 const object=(properties,required=[])=>({type:'object',properties,required,additionalProperties:false});
@@ -7,6 +8,7 @@ export const tools=[
  ['search_transactions','Find up to 20 minimised posted source records in the fixed user scope.',object({category:{type:'string',maxLength:80},month})],
  ['preview_goal','Preview an eating-out goal. This does not save it.',object({limitMinor:{type:'integer',minimum:1,maximum:100000000}},['limitMinor'])],
  ['calculate_capacity','Check whether evidence supports capacity; missing income is unknown.',object({})],
+ ['phone_plan_comparison','Read dated official NZ personal-plan terms and exact cash schedules. Unknown fees and suitability prevent savings claims.',object({})],
  ['retrieve_examples','Retrieve scoped confirmed examples, never merchant-wide rules.',object({})]
 ].map(([name,description,parameters])=>({type:'function',function:{name,description,parameters}}));
 export function executeTool(state,scope,name,args){
@@ -17,6 +19,7 @@ export function executeTool(state,scope,name,args){
  if(name==='search_transactions'){const rows=effectiveTransactions(state).filter(t=>(!args.month||t.date.startsWith(args.month))&&(!args.category||t.category===args.category)&&scopedAmount(t,scope)!==0);return {type:'TransactionList',status:'completed',scope,count:rows.length,calculationId:`search:${state.id}:${state.version}:${scope}`,transactions:rows.slice(0,20).map(t=>({id:t.id,date:t.date,merchant:t.merchant,amountMinor:scopedAmount(t,scope),currency:t.currency,category:t.category,purpose:t.purpose,sourceId:t.sourceId}))}}
  if(name==='preview_goal')return {type:'GoalPreview',status:'draft',saved:false,category:'Eating out',scope,currency:'NZD',limitMinor:args.limitMinor,...goalBaseline(state,scope),calculationId:`goal:${state.id}:${state.version}:${scope}`,assumptions:['Only posted allocations count.','October data is missing; progress is unknown.']};
  if(name==='calculate_capacity')return calculateCapacity(state,scope);
+ if(name==='phone_plan_comparison')return phoneComparison(state,scope);
  if(name==='retrieve_examples')return {status:'completed',examples:state.memory.slice(-12).map(m=>({text:m.text,scope:m.scope,status:m.status}))};
 }
 function minimised(result){const out=structuredClone(result);if(out.sourceIds){out.sourceCount=out.sourceIds.length;out.sourceIds=out.sourceIds.slice(0,16)}if(out.rows)out.rows=out.rows.map(r=>({...r,transactionCount:r.transactionIds.length,transactionIds:r.transactionIds.slice(0,8)}));return out}

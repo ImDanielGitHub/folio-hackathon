@@ -19,6 +19,7 @@ from folio_api.demo_domain import (
     validate_scope,
     workspace_timezone,
 )
+from folio_api.phone_offers import phone_comparison
 from folio_api.providers.nebius import CloudProjection, EvidenceFact
 from folio_api.providers.tool_stream import ToolSpec
 
@@ -74,6 +75,11 @@ def build_tools(state, scope):
         ToolSpec(
             "calculate_capacity",
             "Check whether current evidence can support an income/capacity estimate.",
+            schema({}),
+        ),
+        ToolSpec(
+            "phone_plan_comparison",
+            "Read dated official NZ personal-plan terms and exact cash schedules. Unknown fees and suitability prevent savings claims.",
             schema({}),
         ),
         ToolSpec(
@@ -174,6 +180,8 @@ def make_tool_executor(state, scope):
             }
         if name == "calculate_capacity":
             return calculate_capacity(state, scope)
+        if name == "phone_plan_comparison":
+            return phone_comparison(state, scope)
         if name == "retrieve_examples":
             return {
                 "status": "completed",

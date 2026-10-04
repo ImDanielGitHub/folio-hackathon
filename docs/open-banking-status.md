@@ -18,7 +18,7 @@ Status checked 4 October 2026. This is an implementation and test record, not a 
 
 ## What is not yet implemented or verified
 
-No actual bank API request, bank login, consent grant, token, certificate or client registration has been used. The staging module is not exposed by the public anonymous demo API, and is not yet connected to its UI or D1 deployment. The bank-specific HTTP client, consent lifecycle, full pagination/retry orchestration, authorised sandbox run and reviewed import into the working finance ledger remain open.
+No actual bank API request, bank login, consent grant, token, certificate or client registration has been used. The general-purpose staging module is not exposed by the public anonymous demo API. A separate closed demo path accepts only the server-owned `nz-original-v1` fixture ID; arbitrary payloads/files/credentials are rejected. Its Connections screen stages seven fictional rows and two accounts. Only an explicit per-item purpose/type/category confirmation adds a row to the effective ledger, with undo, exact source cents and isolated persisted receipts. Pending and unidentified rows stay excluded. The bank-specific HTTP client, consent lifecycle, full pagination/retry orchestration, authorised sandbox run and private-data UI remain open.
 
 A transaction page with no `Links.Next` is not by itself proof of complete date-range coverage. The adapter exposes continuation hints but does not fetch them. A future client must validate the selected bank's exact HTTPS origin/path before sending credentials, preserve consent/filter bounds, enforce page/byte limits and reject pagination cycles. It must never construct page URLs from illustrative documentation.
 

@@ -8,7 +8,7 @@ This is an implementation in progress, not a completed financial service. The Re
 
 See [release acceptance](docs/acceptance-status.md) for the full unfinished requirements. CSV import, recurring/digest workflows, verified phone-plan research, production banking, full held-out evaluation and signed native releases are not complete.
 
-Direct NZ open-banking normalization and idempotent staging are covered by offline fictional fixtures. No bank API has been called; see [banking implementation and access gates](docs/open-banking-status.md).
+Direct NZ open-banking normalization and idempotent staging are covered by offline fictional fixtures. The Connections screen loads only an original server-owned NZ test fixture and requires explicit item review before it affects the ledger; no uploads or bank credentials are accepted. No bank API has been called; see [banking implementation and access gates](docs/open-banking-status.md).
 
 ## Architecture
 

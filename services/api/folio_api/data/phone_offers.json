@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-10-04T09:31:51Z",
+  "staleAfter": "2026-10-05T09:31:51Z",
+  "freshnessPolicy": "24-hour application cutoff, not a provider price guarantee.",
+  "offers": [
+    {
+      "id": "nz-mobile-skinny-40-28d-20261004",
+      "provider": "Skinny",
+      "name": "$40 Endless Mobile Plan",
+      "currency": "NZD",
+      "priceMinor": 4000,
+      "billingUnit": "day",
+      "billingCount": 28,
+      "fullSpeedDataGb": 10,
+      "hotspot": true,
+      "taxIncluded": true,
+      "setupMinor": null,
+      "devicePerPaymentMinor": null,
+      "mandatoryPerPaymentMinor": null,
+      "taxPerPaymentMinor": 0,
+      "eligibilityVerified": false,
+      "restrictions": ["Personal NZ use; roaming excluded.", "After 10GB, data continues at a maximum 1.2Mbps; hotspot shares that limit.", "Standard NZ/Australian calls and texts; no rollover or gifting.", "The source has a broad new-customer restriction; individual eligibility needs checking."],
+      "sources": [{"title": "Skinny official plan prices and terms", "url": "https://www.skinny.co.nz/pricing/plans/"}]
+    },
+    {
+      "id": "nz-mobile-2degrees-45-monthly-20261004",
+      "provider": "2degrees",
+      "name": "$45 Monthly Prepay Plan",
+      "currency": "NZD",
+      "priceMinor": 4500,
+      "billingUnit": "month",
+      "billingCount": 1,
+      "fullSpeedDataGb": 10,
+      "hotspot": true,
+      "taxIncluded": true,
+      "setupMinor": null,
+      "devicePerPaymentMinor": null,
+      "mandatoryPerPaymentMinor": null,
+      "taxPerPaymentMinor": 0,
+      "eligibilityVerified": false,
+      "restrictions": ["10GB carryover data per calendar month; hotspot included.", "Standard NZ/Australian calls and texts; premium and satellite calls and MMS excluded.", "Carryover depends on an active plan; excess usage can attract per-MB charges.", "Coverage, device compatibility and individual eligibility have not been verified."],
+      "sources": [{"title": "2degrees official prepay terms", "url": "https://www.2degrees.nz/termsofuse/personal/mobile/prepay/prepay-plans"}, {"title": "2degrees official prepay storefront", "url": "https://www.2degrees.nz/mobile-plans/prepay"}]
+    }
+  ]
+}

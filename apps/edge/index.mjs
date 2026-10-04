@@ -1,3 +1,4 @@
+import {phoneComparison} from './phone-offers.mjs';
 import {DomainError,publicState,compareMonths,calculateCapacity} from './domain.mjs';
 import {Store} from './store.mjs';
 import {advance} from './agent.mjs';
@@ -28,6 +29,7 @@ export async function handle(request,env){
   if(path==='/v1/demo/workspace'&&request.method==='GET')return json(publicState(state,enabled));
   if(path==='/v1/demo/comparison'&&request.method==='GET')return json(compareMonths(state,url.searchParams.get('scope')??'personal'));
   if(path==='/v1/demo/capacity'&&request.method==='GET')return json(calculateCapacity(state,url.searchParams.get('scope')??'personal'));
+  if(path==='/v1/demo/phone-comparison'&&request.method==='GET')return json(phoneComparison(state,url.searchParams.get('scope')??'personal'));
   if(path==='/v1/demo/actions'&&request.method==='POST'){
    if(Object.keys(body).some(k=>!['operationId','expectedVersion','type','payload'].includes(k))||!uuid(body.operationId)||!Number.isInteger(body.expectedVersion)||typeof body.type!=='string'||!body.payload||Array.isArray(body.payload)||typeof body.payload!=='object')throw new DomainError('Invalid action request.');
    return json(publicState(await store.command(state,body),enabled));

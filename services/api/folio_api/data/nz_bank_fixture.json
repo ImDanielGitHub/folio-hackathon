@@ -1,0 +1,113 @@
+{
+  "fixtureId": "nz-original-v1",
+  "provenance": "original_fictional_fixture",
+  "apiConnected": false,
+  "accounts": [
+    {
+      "id": "fixture-nz-everyday",
+      "name": "Fictional Everyday",
+      "currency": "NZD",
+      "currentBalanceMinor": 245678,
+      "availableBalanceMinor": 240123,
+      "availableIncludesCredit": false,
+      "asOf": "2026-10-03T23:00:00Z"
+    },
+    {
+      "id": "fixture-nz-reserve",
+      "name": "Fictional Reserve",
+      "currency": "NZD",
+      "currentBalanceMinor": 870045,
+      "availableBalanceMinor": 870045,
+      "availableIncludesCredit": false,
+      "asOf": "2026-10-03T23:00:00Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "bank-fixture-nz-v1-coffee",
+      "date": "2026-09-29",
+      "merchant": "Kauri Cup (fictional)",
+      "description": "ORIGINAL FICTIONAL FIXTURE: cafe purchase; purpose requires your review",
+      "amountMinor": -1875,
+      "currency": "NZD",
+      "accountId": "fixture-nz-everyday",
+      "sourceId": "nz-original-v1-source-coffee",
+      "postingStatus": "posted",
+      "status": "staged"
+    },
+    {
+      "id": "bank-fixture-nz-v1-groceries",
+      "date": "2026-09-30",
+      "merchant": "Pohutukawa Pantry (fictional)",
+      "description": "ORIGINAL FICTIONAL FIXTURE: shop purchase; purpose requires your review",
+      "amountMinor": -6437,
+      "currency": "NZD",
+      "accountId": "fixture-nz-everyday",
+      "sourceId": "nz-original-v1-source-groceries",
+      "postingStatus": "posted",
+      "status": "staged"
+    },
+    {
+      "id": "bank-fixture-nz-v1-refund",
+      "date": "2026-09-30",
+      "merchant": "Fern Goods (fictional)",
+      "description": "ORIGINAL FICTIONAL FIXTURE: returned item credit; type requires your review",
+      "amountMinor": 1299,
+      "currency": "NZD",
+      "accountId": "fixture-nz-everyday",
+      "sourceId": "nz-original-v1-source-refund",
+      "postingStatus": "posted",
+      "status": "staged"
+    },
+    {
+      "id": "bank-fixture-nz-v1-income",
+      "date": "2026-09-30",
+      "merchant": "Harbour Studio (fictional)",
+      "description": "ORIGINAL FICTIONAL FIXTURE: incoming payment; type requires your review",
+      "amountMinor": 325000,
+      "currency": "NZD",
+      "accountId": "fixture-nz-everyday",
+      "sourceId": "nz-original-v1-source-income",
+      "postingStatus": "posted",
+      "status": "staged"
+    },
+    {
+      "id": "bank-fixture-nz-v1-transfer",
+      "date": "2026-09-30",
+      "merchant": "Reserve movement (fictional)",
+      "description": "ORIGINAL FICTIONAL FIXTURE: outgoing movement; type requires your review",
+      "amountMinor": -50000,
+      "currency": "NZD",
+      "accountId": "fixture-nz-reserve",
+      "sourceId": "nz-original-v1-source-transfer",
+      "postingStatus": "posted",
+      "status": "staged"
+    },
+    {
+      "id": "bank-fixture-nz-v1-pending",
+      "date": "2026-10-03",
+      "merchant": "Tui Fare (fictional)",
+      "description": "ORIGINAL FICTIONAL FIXTURE: pending card authorisation",
+      "amountMinor": -2990,
+      "currency": "NZD",
+      "accountId": "fixture-nz-everyday",
+      "sourceId": "nz-original-v1-source-pending",
+      "postingStatus": "pending",
+      "status": "pending",
+      "reason": "Pending authorisation is not posted and cannot be imported."
+    },
+    {
+      "id": "bank-fixture-nz-v1-missing-id",
+      "date": "2026-09-29",
+      "merchant": "Unknown fixture merchant",
+      "description": "ORIGINAL FICTIONAL FIXTURE: deliberately missing source transaction ID",
+      "amountMinor": -3210,
+      "currency": "NZD",
+      "accountId": "fixture-nz-everyday",
+      "sourceId": null,
+      "postingStatus": "posted",
+      "status": "quarantined",
+      "reason": "Missing source transaction ID; quarantined to prevent unsafe deduplication."
+    }
+  ]
+}

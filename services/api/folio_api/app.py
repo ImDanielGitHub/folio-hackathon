@@ -12,6 +12,7 @@ from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field
 from folio_api.demo_domain import DomainError,compare_months,effective_transactions,refresh_goal_progress,goal_baseline,goal_settings,calculate_capacity
+from folio_api.phone_offers import phone_comparison
 from folio_api.store import Store,StoreError
 
 class Command(BaseModel):
@@ -101,6 +102,8 @@ def create_app(database_url=None,*,testing=False):
     def comparison(request:Request,scope:str='personal'):return compare_months(store.load(token(request)),scope)
     @app.get('/v1/demo/capacity')
     def capacity(request:Request,scope:str='personal'):return calculate_capacity(store.load(token(request)),scope)
+    @app.get('/v1/demo/phone-comparison')
+    def phones(request:Request,scope:str='personal'):return phone_comparison(store.load(token(request)),scope)
     @app.post('/v1/demo/actions')
     def action(request:Request,command:Command):
         check_id(command.operationId)

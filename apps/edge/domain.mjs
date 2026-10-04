@@ -1,3 +1,5 @@
+import {loadBankFixture,confirmBankFixture,confirmedFixtureTransactions} from './bank-fixture.mjs';
+import {phoneSettings} from './phone-offers.mjs';
 /** Exact synthetic finance domain. No external service or model performs arithmetic. */
 export class DomainError extends Error { constructor(message,status=422){super(message);this.status=status} }
 export const categories=['Eating out','Power','Transport','Groceries','Everything else','Not sorted yet'];
@@ -12,12 +14,12 @@ export function initialState(){
    transactions.push({id,date:`${month}-${String((i*2+c)%28+1).padStart(2,'0')}`,merchant:merchants[c][i%merchants[c].length],description:`SYNTHETIC SAMPLE ${categories[c]} ${i+1}`,amountMinor:-amount,currency:'NZD',category:categories[c],purpose:'personal',businessPercent:0,status:c===5&&amount?'needs_review':'example_label',accountId:'demo-everyday',sourceId:`source-${id}`,recurring:c===1,version:1});
   }
  }
- return {id:crypto.randomUUID(),kind:'demo',displayName:'Sam Rivera',currency:'NZD',timezone:'Pacific/Auckland',asOf:'2026-10-04T00:00:00Z',version:1,transactions,annotations:{},goals:[],memory:[],activities:[],history:[],messages:[],model:{state:'unconfigured',provider:'nebius',model:'nvidia/nemotron-3-super-120b-a12b'}};
+ return {id:crypto.randomUUID(),kind:'demo',displayName:'Sam Rivera',currency:'NZD',timezone:'Pacific/Auckland',asOf:'2026-10-04T00:00:00Z',version:1,transactions,annotations:{},bankImport:null,goals:[],memory:[],activities:[],history:[],messages:[],model:{state:'unconfigured',provider:'nebius',model:'nvidia/nemotron-3-super-120b-a12b'}};
 }
 export function splitAmount(amount,pct){if(!Number.isSafeInteger(amount)||!Number.isInteger(pct)||pct<0||pct>100)throw new DomainError('Use an integer percentage from 0 to 100.');const work=Math.sign(amount)*Math.floor(Math.abs(amount)*pct/100);return [work,amount-work]}
 export function scopedAmount(row,scope){if(!['personal','business','everything'].includes(scope))throw new DomainError('Unknown scope.');if(scope==='everything')return row.amountMinor;const [work,personal]=splitAmount(row.amountMinor,row.businessPercent??(row.purpose==='business'?100:0));return scope==='business'?work:personal}
-export const effectiveTransactions=state=>state.transactions.map(t=>({...t,...state.annotations[t.id]}));
-export function posted(row){return !['pending','removed','deleted'].includes(row.status)&&row.type!=='transfer'&&row.type!=='income'}
+export const effectiveTransactions=state=>[...state.transactions,...confirmedFixtureTransactions(state.bankImport)].map(t=>({...t,...state.annotations[t.id],postingStatus:t.postingStatus??t.status??'posted'}));
+export function posted(row){return !['pending','removed','deleted','staged','quarantined'].includes(row.status)&&!['pending','removed','deleted'].includes(row.postingStatus)&&row.type!=='transfer'&&row.type!=='income'}
 export function compareMonths(state,scope,previous='2026-08',current='2026-09',currency='NZD'){
  scopedAmount({amountMinor:0,businessPercent:0},scope);
  const rows=effectiveTransactions(state), all=rows.filter(t=>t.currency===currency&&[previous,current].includes(t.date.slice(0,7))), selected=all.filter(posted);
@@ -31,19 +33,23 @@ export function goalBaseline(state,scope='personal'){
 }
 export function publicState(state,enabled=false){const {history,annotations,...rest}=state;return {...rest,transactions:effectiveTransactions(state),goalBaseline:goalBaseline(state),model:{...rest.model,state:enabled?'configured_unverified':'unconfigured'}}}
 export function applyAction(state,type,payload){
- const value=structuredClone(state),before={annotations:structuredClone(state.annotations),goals:structuredClone(state.goals),memory:structuredClone(state.memory),capacityScenario:structuredClone(state.capacityScenario??null)},ids=new Set(state.transactions.map(t=>t.id));let label='';
+ if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new DomainError('Action payload must be an object.');
+ const value=structuredClone(state),before={annotations:structuredClone(state.annotations),goals:structuredClone(state.goals),memory:structuredClone(state.memory),capacityScenario:structuredClone(state.capacityScenario??null),phoneScenario:structuredClone(state.phoneScenario??null),bankImport:structuredClone(state.bankImport??null)},effectiveRows=effectiveTransactions(state),ids=new Set(effectiveRows.map(t=>t.id));let label='';
  const integerAmount=amount=>{if(!Number.isSafeInteger(amount)||amount<1||amount>100000000)throw new DomainError('Enter a positive supported amount.');return amount};
  if(type==='reset'){const result=initialState();return {...result,id:state.id,version:state.version+1}}
  if(type==='undo'){const prior=value.history.pop();if(!prior)throw new DomainError('There is no reversible action.');Object.assign(value,prior.before);label=`Undid: ${prior.label}`}
- else if(type==='classify'){
+ else if(type==='load_bank_fixture'){value.bankImport=loadBankFixture(state.bankImport,payload);if(state.bankImport!==null&&state.bankImport!==undefined)return value;label='Staged original fictional bank fixture for review; no bank API connected';
+ }else if(type==='confirm_bank_fixture'){value.bankImport=confirmBankFixture(state.bankImport,payload);label='Imported one explicitly reviewed fictional transaction';
+ }else if(type==='classify'){
   const {ids:chosen,purpose}=payload;if(!Array.isArray(chosen)||chosen.length<1||chosen.length>50||new Set(chosen).size!==chosen.length||chosen.some(id=>!ids.has(id)))throw new DomainError('Choose 1–50 transactions in this workspace.');
   if(!['personal','business'].includes(purpose))throw new DomainError('Choose personal or business.');
   for(const id of chosen)value.annotations[id]={...value.annotations[id],purpose,businessPercent:purpose==='business'?100:0,status:'confirmed'};
   label=`Confirmed ${chosen.length} transactions as ${purpose}`;
   if(payload.remember===true)value.memory.push({id:crypto.randomUUID(),text:`These ${chosen.length} selected purchases were ${purpose}.`,scope:chosen,status:'confirmed',source:'Your correction',createdAt:new Date().toISOString()});
  }else if(type==='split'){
-  const row=state.transactions.find(t=>t.id===payload.id);if(!row)throw new DomainError('Transaction not found in this workspace.');splitAmount(row.amountMinor,payload.businessPercent);
+  const row=effectiveRows.find(t=>t.id===payload.id);if(!row)throw new DomainError('Transaction not found in this workspace.');splitAmount(row.amountMinor,payload.businessPercent);
   value.annotations[row.id]={...value.annotations[row.id],purpose:'split',businessPercent:payload.businessPercent,status:'confirmed'};label=`Split one transaction ${payload.businessPercent}/${100-payload.businessPercent}`;
+ }else if(type==='save_phone_scenario'){value.phoneScenario=phoneSettings(payload);label='Saved fictional phone-plan requirements';
  }else if(type==='save_capacity_scenario'){value.capacityScenario=capacitySettings(state,payload);label='Saved a hypothetical capacity scenario';
  }else if(type==='save_goal'){
   value.goals.push({id:crypto.randomUUID(),title:'Eating out',limitMinor:integerAmount(payload.limitMinor),currency:'NZD',scope:'personal',period:'month',startsOn:'2026-10-01',status:'active',version:1,spentMinor:null,progressNote:'No October transactions imported yet. Progress is unknown.',...goalBaseline(state)});label='Saved an eating-out goal';

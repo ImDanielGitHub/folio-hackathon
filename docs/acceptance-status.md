@@ -14,11 +14,11 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 ## Evidence so far
 
 - TypeScript check and Vite production build passed on 4 October.
-- Latest aggregate Python run: 154 tests pass after fixing a random citation-UUID parsing regression. Sites adapter: 28 deterministic tests pass with an in-memory SQLite/D1 adapter. Shared React typecheck/production build passes.
+- Latest aggregate Python run: 260 tests pass, including bank normalization/staging and closed fictional import review. Sites adapter: 47 deterministic tests pass with an in-memory SQLite/D1 adapter. Seven frontend-helper tests and shared React typecheck/production build pass. The exact bundled Worker passes fixture load, explicit review and reconciled-total smoke checks.
 - Nine Tauri deployment/security configuration tests passed. Native compilation and cookie persistence across desktop restart have not run.
 - Source has 341 fictional transactions, exact minor-unit comparison, reversible manual annotation/splits, goals, scoped correction records, isolated cookie sessions and versioned idempotent writes.
 - Nemotron provider and bounded real tool-stream loop source exists. Tests use controlled transports. No live inference has been verified.
-- Public synthetic Sites preview deployed on 4 October: https://folio-finance-coach.imdaniel.chatgpt.site. Browser verified anonymous first-run, exact comparison, goal save/reload/edit/undo, scoped phone split/recalculation/undo, dark appearance and truthful model-unavailable state. A separate public GitHub repository, mobile viewport and native QA remain pending.
+- Public synthetic Sites preview deployed on 4 October: https://folio-finance-coach.imdaniel.chatgpt.site. Browser verified anonymous first-run, exact comparison, goal save/reload/edit/undo, scoped phone split/recalculation/undo, dark appearance and truthful model-unavailable state. Public source is published at https://github.com/ImDanielGitHub/folio-hackathon. Mobile viewport and native QA remain pending.
 
 ## Screen/flow gates
 
@@ -26,7 +26,7 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 |---|---|---|
 | S01 welcome/demo | Implemented source, API tests | Fresh browser/native journey, sign-out invalidation |
 | S02 profile/consent | Missing | Separate permissions and provenance |
-| S03 connections | Direct Payments NZ standard normalization and provider-neutral staging contract tested with original fictional fixtures; public connection UI disabled | Bank-specific consent/HTTP adapter, full sync lifecycle, authorised live sandbox test, private import UI; see [banking status](open-banking-status.md) |
+| S03 connections | Direct Payments NZ standard normalization plus closed fictional fixture Connections/review UI implemented and API-tested; API connection truthfully unavailable | Deployed fixture UI journey QA, bank-specific consent/HTTP adapter, full sync lifecycle, authorised live sandbox test and private import UI; see [banking status](open-banking-status.md) |
 | S04 CSV | Missing in current shared frontend | Preview, ambiguity, batch commit and duplicate protection |
 | S05 first useful work | Deterministic sample comparison | Unscripted model-led bounded organisation |
 | S06 Today/conversation | Persisted run/history/reconnect source | Browser proof; Sites request-bound execution only; dismiss/snooze |
@@ -35,11 +35,11 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 | S09 detail/split | Exact split/undo tested; deployed browser 60/40 phone split and undo passed | Refund UI and native journeys |
 | S10 grouped review | Manual bounded confirmation | Actual model uncertainty, learned example and counterexample |
 | S11 breakdowns | Exact scoped totals | Currency/transfer/refund/coverage golden corpus |
-| S12 capacity | Editable explicitly hypothetical scenario source; saved inputs, exact monthly and separate cash arithmetic, scoped tools, undo and timezone tests | Deployed UI QA; real evidence-backed projections and commitment ingestion |
+| S12 capacity | Editable explicitly hypothetical scenario source; saved inputs, exact monthly and separate cash arithmetic, scoped tools, undo and timezone tests | Synthetic deployed UI save/scope/arithmetic verified; real evidence-backed projections and commitment ingestion remain |
 | S13 goals | Edit/archive, timezone, baseline and unknown progress tested in Python; shared UI updated | Browser/native proof; edge timezone/coverage parity |
 | S14 recurring | Missing | Confirmed series, variable/annual charges |
-| S15 opportunities | Honest unavailable state | Permissioned research, freshness, dismiss |
-| S16 phone comparison | Missing | Official-source terms, billing arithmetic, unknown fees |
+| S15 opportunities | Source-linked phone comparison snapshot; bounded freshness and unknown total gates | Refresh workflow, dismiss and broader research |
+| S16 phone comparison | Original official-source Skinny/2degrees snapshots, exact monthly/28-day arithmetic, requirements and unknown-fee guards tested | Deployed browser proof and automatic source refresh; no verified switching savings |
 | S17 outcome tracking | Missing | Projected/reported/observed distinctions |
 | S18 grants | Missing, P1 | Official conditions and Unknown eligibility |
 | Remaining settings/activity/memory/remote/release screens | Partial activity/memory/settings source | Full handover interactions, deletion, quiet controls, secure Telegram and packaging |
@@ -65,11 +65,11 @@ Passing a related unit test does not mean the whole release scenario has passed.
 | T13 | Goal month boundary uses timezone | Pending |
 | T14 | Personal goal excludes business | Pending |
 | T15 | Missing data distinct from zero | Comparison unit proof; broader coverage pending |
-| T16 | Promotion expiry included | Pending |
-| T17 | Unknown exit fee blocks exact savings | Pending |
-| T18 | 28-day billing arithmetic | Pending |
+| T16 | Promotion expiry included | Exact billing-schedule tests pass; real offer review remains |
+| T17 | Unknown exit fee blocks exact savings | Python/edge fixture proof passes |
+| T18 | 28-day billing arithmetic | Python/edge exact-horizon tests pass |
 | T19 | Coverage mismatch rejected | Pending |
-| T20 | Expired source rechecked/unavailable | Pending |
+| T20 | Expired source rechecked/unavailable | Snapshot expiry suppresses prices in tests; live refresh pending |
 | T21 | Eligibility Unknown preserved | Pending |
 | T22 | No sensitive eligibility inference | Pending |
 | T23 | Prompt injection cannot disclose private data | Provider projection tests; research ingestion pending |
@@ -85,4 +85,4 @@ Passing a related unit test does not mean the whole release scenario has passed.
 
 No release is ready until the thin vertical slice works without developer assistance: fresh session, real Nemotron query, exact typed evidence, reversible correction, goal, one useful verified opportunity and persisted receipts. Four diverse synthetic accounts and held-out evaluations remain required. No measured precision, task-success, first-value or model-tier claim is made.
 
-Deployment also requires a verified Nebius project/region, scoped secure credentials, approved usage budget, TLS and PostgreSQL verification, durable worker restart tests, backups/restore, browser QA, public-repository authorisation/licence review, and a working judge path maintained through the judging period.
+Optional full Nebius hosting still requires a verified project/region, scoped secure credentials, approved usage budget, TLS and PostgreSQL verification, durable worker restart tests, backups/restore, browser QA, public-repository authorisation/licence review, and a working judge path maintained through the judging period.
