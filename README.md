@@ -8,6 +8,8 @@ This is an implementation in progress, not a completed financial service. The Re
 
 See [release acceptance](docs/acceptance-status.md) for the full unfinished requirements. CSV import, recurring/digest workflows, verified phone-plan research, production banking, full held-out evaluation and signed native releases are not complete.
 
+Direct NZ open-banking normalization and idempotent staging are covered by offline fictional fixtures. No bank API has been called; see [banking implementation and access gates](docs/open-banking-status.md).
+
 ## Architecture
 
 - `apps/web-demo`: shared React/Vite working surface, Paper-derived Newsreader/Inter design

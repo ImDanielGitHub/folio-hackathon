@@ -26,7 +26,7 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 |---|---|---|
 | S01 welcome/demo | Implemented source, API tests | Fresh browser/native journey, sign-out invalidation |
 | S02 profile/consent | Missing | Separate permissions and provenance |
-| S03 connections | Disabled honestly | Akahu/Plaid adapters, callbacks, fixtures, authorised testing |
+| S03 connections | Direct Payments NZ standard normalization and provider-neutral staging contract tested with original fictional fixtures; public connection UI disabled | Bank-specific consent/HTTP adapter, full sync lifecycle, authorised live sandbox test, private import UI; see [banking status](open-banking-status.md) |
 | S04 CSV | Missing in current shared frontend | Preview, ambiguity, batch commit and duplicate protection |
 | S05 first useful work | Deterministic sample comparison | Unscripted model-led bounded organisation |
 | S06 Today/conversation | Persisted run/history/reconnect source | Browser proof; Sites request-bound execution only; dismiss/snooze |
