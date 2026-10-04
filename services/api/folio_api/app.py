@@ -30,7 +30,7 @@ class Question(BaseModel):
 
 def public_state(state):
     state=refresh_goal_progress(state)
-    return {**{k:v for k,v in state.items() if k not in ('history','annotations')},'transactions':effective_transactions(state),'goalBaseline':{'baselineMinor':goal_baseline(state,goal_settings(state,{'limitMinor':50000,'scope':'personal'}))['baselineMinor'],'months':goal_baseline(state,goal_settings(state,{'limitMinor':50000,'scope':'personal'}))['baselineMonths']}}
+    return {**{k:v for k,v in state.items() if k not in ('history','annotations')},'undo':{'available':bool(state['history']),'label':state['history'][-1]['label'] if state['history'] else None},'transactions':effective_transactions(state),'goalBaseline':{'baselineMinor':goal_baseline(state,goal_settings(state,{'limitMinor':50000,'scope':'personal'}))['baselineMinor'],'months':goal_baseline(state,goal_settings(state,{'limitMinor':50000,'scope':'personal'}))['baselineMonths']}}
 
 def create_app(database_url=None,*,testing=False):
     production=os.getenv('FOLIO_ENV')=='production' and not testing

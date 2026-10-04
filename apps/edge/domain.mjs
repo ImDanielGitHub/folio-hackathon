@@ -31,7 +31,7 @@ export function goalBaseline(state,scope='personal'){
  const values=Object.keys(base).map(month=>({month,amountMinor:-effectiveTransactions(state).filter(t=>posted(t)&&t.currency==='NZD'&&t.category==='Eating out'&&t.date.startsWith(month)).reduce((sum,t)=>sum+scopedAmount(t,scope),0)}));
  return {months:values,baselineMinor:Math.floor(values.reduce((sum,x)=>sum+x.amountMinor,0)/values.length)};
 }
-export function publicState(state,enabled=false){const {history,annotations,...rest}=state;return {...rest,transactions:effectiveTransactions(state),goalBaseline:goalBaseline(state),model:{...rest.model,state:enabled?'configured_unverified':'unconfigured'}}}
+export function publicState(state,enabled=false){const {history,annotations,...rest}=state;return {...rest,undo:{available:history.length>0,label:history.at(-1)?.label??null},transactions:effectiveTransactions(state),goalBaseline:goalBaseline(state),model:{...rest.model,state:enabled?'configured_unverified':'unconfigured'}}}
 export function applyAction(state,type,payload){
  if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new DomainError('Action payload must be an object.');
  const value=structuredClone(state),before={annotations:structuredClone(state.annotations),goals:structuredClone(state.goals),memory:structuredClone(state.memory),capacityScenario:structuredClone(state.capacityScenario??null),phoneScenario:structuredClone(state.phoneScenario??null),bankImport:structuredClone(state.bankImport??null)},effectiveRows=effectiveTransactions(state),ids=new Set(effectiveRows.map(t=>t.id));let label='';

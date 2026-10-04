@@ -270,3 +270,21 @@ def test_api_fixture_persists_replays_and_stays_in_one_tenant(tmp_path):
     )
     assert foreign.status_code == 422
     assert len(second.get("/v1/demo/workspace").json()["transactions"]) == 341
+
+
+def test_public_undo_control_uses_remaining_history_not_latest_receipt():
+    from folio_api.app import public_state
+
+    original = initial_state()
+    assert public_state(original)["undo"] == {"available": False, "label": None}
+    staged = load(original)
+    accepted = confirm(staged, "coffee")
+    undone = apply_action(accepted, "undo", {})
+    view = public_state(undone)
+    assert view["undo"]["available"] is True
+    assert view["undo"]["label"].startswith("Staged original fictional")
+    assert "history" not in view
+    assert public_state(apply_action(undone, "undo", {}))["undo"] == {
+        "available": False,
+        "label": None,
+    }

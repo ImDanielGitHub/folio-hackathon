@@ -14,7 +14,7 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 ## Evidence so far
 
 - TypeScript check and Vite production build passed on 4 October.
-- Latest aggregate Python run: 260 tests pass, including bank normalization/staging and closed fictional import review. Sites adapter: 47 deterministic tests pass with an in-memory SQLite/D1 adapter. Seven frontend-helper tests and shared React typecheck/production build pass. The exact bundled Worker passes fixture load, explicit review and reconciled-total smoke checks.
+- Latest aggregate Python run: 261 tests pass, including bank normalization/staging and closed fictional import review. Sites adapter: 48 deterministic tests pass with an in-memory SQLite/D1 adapter. Seven frontend-helper tests and shared React typecheck/production build pass. The exact bundled Worker passes fixture load, explicit review and reconciled-total smoke checks.
 - Nine Tauri deployment/security configuration tests passed. Native compilation and cookie persistence across desktop restart have not run.
 - Source has 341 fictional transactions, exact minor-unit comparison, reversible manual annotation/splits, goals, scoped correction records, isolated cookie sessions and versioned idempotent writes.
 - Nemotron provider and bounded real tool-stream loop source exists. Tests use controlled transports. No live inference has been verified.
@@ -26,7 +26,7 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 |---|---|---|
 | S01 welcome/demo | Implemented source, API tests | Fresh browser/native journey, sign-out invalidation |
 | S02 profile/consent | Missing | Separate permissions and provenance |
-| S03 connections | Direct Payments NZ standard normalization plus closed fictional fixture Connections/review UI implemented and API-tested; API connection truthfully unavailable | Deployed fixture UI journey QA, bank-specific consent/HTTP adapter, full sync lifecycle, authorised live sandbox test and private import UI; see [banking status](open-banking-status.md) |
+| S03 connections | Direct Payments NZ standard normalization plus closed fictional fixture Connections/review UI implemented and API-tested; API connection truthfully unavailable | Browser verified fixture staging, confirmation, persistence and undo; bank-specific consent/HTTP adapter, full sync lifecycle, authorised live sandbox test and private import UI; see [banking status](open-banking-status.md) |
 | S04 CSV | Missing in current shared frontend | Preview, ambiguity, batch commit and duplicate protection |
 | S05 first useful work | Deterministic sample comparison | Unscripted model-led bounded organisation |
 | S06 Today/conversation | Persisted run/history/reconnect source | Browser proof; Sites request-bound execution only; dismiss/snooze |
