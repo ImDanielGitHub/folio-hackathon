@@ -2,6 +2,7 @@ import {readFile,mkdir,cp,writeFile,rm} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 execFileSync('npm',['--prefix','apps/web-demo','run','build'],{stdio:'inherit'});
 await mkdir('dist/server',{recursive:true});await mkdir('dist/.openai',{recursive:true});
+await rm('dist/client',{recursive:true,force:true});
 await cp('apps/web-demo/dist','dist/client',{recursive:true});
 const parts=[];for(const file of ['domain','store','agent','index']){
  const source=await readFile(`apps/edge/${file}.mjs`,'utf8');parts.push(source.replace(/^import .*;\n/gm,'').replace(/\bexport (?=(?:const|class|function|async function))/g,''));

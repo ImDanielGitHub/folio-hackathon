@@ -1,4 +1,4 @@
-import {compareMonths,effectiveTransactions,scopedAmount,goalBaseline,DomainError} from './domain.mjs';
+import {compareMonths,effectiveTransactions,scopedAmount,goalBaseline,DomainError,calculateCapacity} from './domain.mjs';
 const MODEL='nvidia/nemotron-3-super-120b-a12b';
 const object=(properties,required=[])=>({type:'object',properties,required,additionalProperties:false});
 const month={type:'string',enum:['2026-07','2026-08','2026-09']};
@@ -16,7 +16,7 @@ export function executeTool(state,scope,name,args){
  if(name==='compare_periods')return compareMonths(state,scope,args.previous,args.current);
  if(name==='search_transactions'){const rows=effectiveTransactions(state).filter(t=>(!args.month||t.date.startsWith(args.month))&&(!args.category||t.category===args.category)&&scopedAmount(t,scope)!==0);return {type:'TransactionList',status:'completed',scope,count:rows.length,calculationId:`search:${state.id}:${state.version}:${scope}`,transactions:rows.slice(0,20).map(t=>({id:t.id,date:t.date,merchant:t.merchant,amountMinor:scopedAmount(t,scope),currency:t.currency,category:t.category,purpose:t.purpose,sourceId:t.sourceId}))}}
  if(name==='preview_goal')return {type:'GoalPreview',status:'draft',saved:false,category:'Eating out',scope,currency:'NZD',limitMinor:args.limitMinor,...goalBaseline(state,scope),calculationId:`goal:${state.id}:${state.version}:${scope}`,assumptions:['Only posted allocations count.','October data is missing; progress is unknown.']};
- if(name==='calculate_capacity')return {status:'needs_input',question:'The demo has no verified income or balances. What income and buffer should the scenario use?',guaranteedIncome:false};
+ if(name==='calculate_capacity')return calculateCapacity(state,scope);
  if(name==='retrieve_examples')return {status:'completed',examples:state.memory.slice(-12).map(m=>({text:m.text,scope:m.scope,status:m.status}))};
 }
 function minimised(result){const out=structuredClone(result);if(out.sourceIds){out.sourceCount=out.sourceIds.length;out.sourceIds=out.sourceIds.slice(0,16)}if(out.rows)out.rows=out.rows.map(r=>({...r,transactionCount:r.transactionIds.length,transactionIds:r.transactionIds.slice(0,8)}));return out}

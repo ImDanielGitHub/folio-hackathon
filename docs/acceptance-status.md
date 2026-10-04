@@ -14,7 +14,7 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 ## Evidence so far
 
 - TypeScript check and Vite production build passed on 4 October.
-- Latest aggregate Python run: 146 tests pass after fixing a random citation-UUID parsing regression. Sites adapter: 23 deterministic tests pass with an in-memory SQLite/D1 adapter. Shared React typecheck/production build passes.
+- Latest aggregate Python run: 154 tests pass after fixing a random citation-UUID parsing regression. Sites adapter: 28 deterministic tests pass with an in-memory SQLite/D1 adapter. Shared React typecheck/production build passes.
 - Nine Tauri deployment/security configuration tests passed. Native compilation and cookie persistence across desktop restart have not run.
 - Source has 341 fictional transactions, exact minor-unit comparison, reversible manual annotation/splits, goals, scoped correction records, isolated cookie sessions and versioned idempotent writes.
 - Nemotron provider and bounded real tool-stream loop source exists. Tests use controlled transports. No live inference has been verified.
@@ -35,7 +35,7 @@ Updated 4 October 2026. This is an implementation status record, not a completio
 | S09 detail/split | Exact split/undo tested; deployed browser 60/40 phone split and undo passed | Refund UI and native journeys |
 | S10 grouped review | Manual bounded confirmation | Actual model uncertainty, learned example and counterexample |
 | S11 breakdowns | Exact scoped totals | Currency/transfer/refund/coverage golden corpus |
-| S12 capacity | Truthful missing-data result | Editable scenarios and deterministic calculations |
+| S12 capacity | Editable explicitly hypothetical scenario source; saved inputs, exact monthly and separate cash arithmetic, scoped tools, undo and timezone tests | Deployed UI QA; real evidence-backed projections and commitment ingestion |
 | S13 goals | Edit/archive, timezone, baseline and unknown progress tested in Python; shared UI updated | Browser/native proof; edge timezone/coverage parity |
 | S14 recurring | Missing | Confirmed series, variable/annual charges |
 | S15 opportunities | Honest unavailable state | Permissioned research, freshness, dismiss |
@@ -60,7 +60,7 @@ Passing a related unit test does not mean the whole release scenario has passed.
 | T08 | Stale multi-client write rejected | API version conflict passes; remote client pending |
 | T09 | Retry after commit returns original result | API idempotency and retained client operation-ID tests pass; browser fault injection pending |
 | T10 | Cloud outage preserves cached views | Pending |
-| T11 | Irregular income not guaranteed | Missing-data tool passes; income corpus pending |
+| T11 | Irregular income not guaranteed | Hypothetical variable income excluded by default; opt-in uncertainty tested; real income corpus pending |
 | T12 | NZD/USD never silently summed | Full corpus pending |
 | T13 | Goal month boundary uses timezone | Pending |
 | T14 | Personal goal excludes business | Pending |

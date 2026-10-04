@@ -9,3 +9,6 @@
 /* Keep contextual actions inside the scroller and preserve composer space. */
 .text-actions{margin-left:0;margin-right:0}.main-region{display:flex;flex-direction:column}.conversation{height:auto;flex:1;min-height:0;width:100%}.page-section{width:100%}
 @media(max-width:760px){.conversation{min-height:550px}}
+
+.capacity-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:24px 0}.capacity-form label{font-size:12px;color:var(--muted)}.capacity-form input{display:block;width:100%;margin-top:7px;padding:10px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);font-variant-numeric:tabular-nums}.scenario-scope{display:flex;align-items:center;gap:12px;margin-top:22px;font-size:12px}.scenario-scope select{padding:7px;background:var(--surface);border:1px solid var(--border);border-radius:5px}.scenario-switch{display:flex;gap:10px;align-items:center;font-size:13px;margin-bottom:14px}.scenario-switch input{accent-color:var(--accent)}.capacity-result{border-top:1px solid var(--ink);margin-top:30px;padding-top:20px}.capacity-result details{margin-top:20px}.capacity-result li{font-size:12px;line-height:1.7}.capacity-result>.quiet-link{margin-top:15px}.capacity-result>.warning{margin:16px 0}.capacity-result+form{margin-top:20px}
+@media(max-width:560px){.capacity-form{grid-template-columns:1fr}}

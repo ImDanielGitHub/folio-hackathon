@@ -427,6 +427,7 @@ def apply_action(state, action, payload, *, now=None):
         raise DomainError("Action payload must be an object.")
     value = deepcopy(state)
     snapshot = {key: deepcopy(state[key]) for key in ("annotations", "goals", "memory")}
+    snapshot["capacityScenario"] = deepcopy(state.get("capacityScenario"))
     ids = {t["id"] for t in state["transactions"]}
     if action == "undo":
         if not value["history"]:
@@ -480,6 +481,9 @@ def apply_action(state, action, payload, *, now=None):
             "status": "confirmed",
         }
         label = f"Split one transaction {pct}/{100 - pct}"
+    elif action == "save_capacity_scenario":
+        value["capacityScenario"] = capacity_settings(state, payload)
+        label = "Saved a hypothetical capacity scenario"
     elif action == "save_goal":
         goal = goal_settings(state, payload, now=now)
         goal.update(id=str(uuid4()), status="active", version=1)
@@ -527,3 +531,115 @@ def apply_action(state, action, payload, *, now=None):
         },
     )
     return refresh_goal_progress(value, now)
+
+
+def capacity_settings(state, payload):
+    """Explicit hypothetical inputs, never inferred salary or bank balances."""
+    monetary = (
+        "regularIncomeMinor",
+        "variableIncomeMinor",
+        "committedCostsMinor",
+        "livingCostsMinor",
+        "savingsReserveMinor",
+        "availableBalanceMinor",
+        "protectedBalanceMinor",
+        "oneOffCostMinor",
+    )
+    allowed = {*monetary, "scope", "currency", "includeVariableIncome"}
+    if not isinstance(payload, dict) or set(payload) - allowed:
+        raise DomainError("Unsupported capacity assumption.")
+    scope = payload.get("scope", "personal")
+    validate_scope(scope)
+    currency = payload.get("currency", state["currency"])
+    if currency != state["currency"]:
+        raise DomainError("The scenario must use the workspace currency; no conversion is assumed.")
+    included = payload.get("includeVariableIncome", False)
+    if type(included) is not bool:
+        raise DomainError("Choose whether to include variable income.")
+    result = {"scope": scope, "currency": currency, "includeVariableIncome": included}
+    for key in monetary:
+        value = payload.get(key)
+        if value is not None and (type(value) is not int or not 0 <= value <= 100_000_000):
+            raise DomainError("Scenario money must be nonnegative integer minor units or unknown.")
+        result[key] = value
+    return result
+
+
+def calculate_capacity(state, scope="personal"):
+    validate_scope(scope)
+    saved = state.get("capacityScenario")
+    if saved is None or saved.get("scope") != scope:
+        return {
+            "type": "CapacityScenario",
+            "schemaVersion": 1,
+            "status": "needs_input",
+            "scope": scope,
+            "currency": state["currency"],
+            "monthlyCapacityMinor": None,
+            "cashHeadroomAfterPurchaseMinor": None,
+            "guaranteedIncome": False,
+            "question": "Add your fictional income, costs and reserve assumptions in Capacity. "
+            "No income or balance is inferred from spending records.",
+        }
+    values = capacity_settings(state, saved)
+    required = [
+        "regularIncomeMinor",
+        "committedCostsMinor",
+        "livingCostsMinor",
+        "savingsReserveMinor",
+    ]
+    if values["includeVariableIncome"]:
+        required.append("variableIncomeMinor")
+    missing = [key for key in required if values[key] is None]
+    income = None if values["regularIncomeMinor"] is None else values["regularIncomeMinor"]
+    if values["includeVariableIncome"]:
+        income = (
+            None
+            if income is None or values["variableIncomeMinor"] is None
+            else (income + values["variableIncomeMinor"])
+        )
+    costs = (
+        None
+        if any(values[key] is None for key in required[1:4])
+        else sum(values[key] for key in required[1:4])
+    )
+    capacity = None if income is None or costs is None else income - costs
+    cash_keys = ("availableBalanceMinor", "protectedBalanceMinor", "oneOffCostMinor")
+    cash_missing = [key for key in cash_keys if values[key] is None]
+    cash = (
+        None
+        if cash_missing
+        else (
+            values["availableBalanceMinor"]
+            - values["protectedBalanceMinor"]
+            - values["oneOffCostMinor"]
+        )
+    )
+    return {
+        "type": "CapacityScenario",
+        "schemaVersion": 1,
+        "status": "needs_input" if missing else "completed",
+        "scope": scope,
+        "currency": values["currency"],
+        "inputs": values,
+        "period": reporting_date(state).strftime("%Y-%m"),
+        "timezone": state.get("timezone", "Pacific/Auckland"),
+        "calculationId": f"capacity:{state['id']}:{state['version']}:{scope}",
+        "incomeMinor": income,
+        "monthlyOutgoingsMinor": costs,
+        "monthlyCapacityMinor": capacity,
+        "cashHeadroomAfterPurchaseMinor": cash,
+        "missingInputs": missing,
+        "missingCashInputs": cash_missing,
+        "guaranteedIncome": False,
+        "dataBasis": "user_entered_hypothetical_assumptions",
+        "assumptions": [
+            "Inputs are fictional, user-entered assumptions, not verified bank evidence.",
+            "Variable income is included as an uncertain scenario assumption."
+            if values["includeVariableIncome"]
+            else "Variable income is excluded.",
+            "Monthly cash flow and current balance are shown separately, never added together.",
+            "Costs must not be counted in both commitments and day-to-day spending.",
+            "A positive estimate is not a guarantee of affordability.",
+        ],
+    }

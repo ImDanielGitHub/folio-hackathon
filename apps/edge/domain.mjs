@@ -31,7 +31,7 @@ export function goalBaseline(state,scope='personal'){
 }
 export function publicState(state,enabled=false){const {history,annotations,...rest}=state;return {...rest,transactions:effectiveTransactions(state),goalBaseline:goalBaseline(state),model:{...rest.model,state:enabled?'configured_unverified':'unconfigured'}}}
 export function applyAction(state,type,payload){
- const value=structuredClone(state),before={annotations:structuredClone(state.annotations),goals:structuredClone(state.goals),memory:structuredClone(state.memory)},ids=new Set(state.transactions.map(t=>t.id));let label='';
+ const value=structuredClone(state),before={annotations:structuredClone(state.annotations),goals:structuredClone(state.goals),memory:structuredClone(state.memory),capacityScenario:structuredClone(state.capacityScenario??null)},ids=new Set(state.transactions.map(t=>t.id));let label='';
  const integerAmount=amount=>{if(!Number.isSafeInteger(amount)||amount<1||amount>100000000)throw new DomainError('Enter a positive supported amount.');return amount};
  if(type==='reset'){const result=initialState();return {...result,id:state.id,version:state.version+1}}
  if(type==='undo'){const prior=value.history.pop();if(!prior)throw new DomainError('There is no reversible action.');Object.assign(value,prior.before);label=`Undid: ${prior.label}`}
@@ -44,6 +44,7 @@ export function applyAction(state,type,payload){
  }else if(type==='split'){
   const row=state.transactions.find(t=>t.id===payload.id);if(!row)throw new DomainError('Transaction not found in this workspace.');splitAmount(row.amountMinor,payload.businessPercent);
   value.annotations[row.id]={...value.annotations[row.id],purpose:'split',businessPercent:payload.businessPercent,status:'confirmed'};label=`Split one transaction ${payload.businessPercent}/${100-payload.businessPercent}`;
+ }else if(type==='save_capacity_scenario'){value.capacityScenario=capacitySettings(state,payload);label='Saved a hypothetical capacity scenario';
  }else if(type==='save_goal'){
   value.goals.push({id:crypto.randomUUID(),title:'Eating out',limitMinor:integerAmount(payload.limitMinor),currency:'NZD',scope:'personal',period:'month',startsOn:'2026-10-01',status:'active',version:1,spentMinor:null,progressNote:'No October transactions imported yet. Progress is unknown.',...goalBaseline(state)});label='Saved an eating-out goal';
  }else if(['pause_goal','edit_goal','archive_goal'].includes(type)){
@@ -55,4 +56,20 @@ export function applyAction(state,type,payload){
  if(type!=='undo')value.history.push({before,label});value.version++;
  value.activities.unshift({id:crypto.randomUUID(),label,status:'completed',createdAt:new Date().toISOString(),source:'You confirmed',undoable:type!=='undo',affectedIds:payload.ids??(payload.id?[payload.id]:[])});
  return value;
+}
+export const capacityFields=['regularIncomeMinor','variableIncomeMinor','committedCostsMinor','livingCostsMinor','savingsReserveMinor','availableBalanceMinor','protectedBalanceMinor','oneOffCostMinor'];
+export function capacitySettings(state,payload){
+ const allowed=new Set([...capacityFields,'scope','currency','includeVariableIncome']);if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).some(k=>!allowed.has(k)))throw new DomainError('Unsupported capacity assumption.');
+ const scope=payload.scope===undefined?'personal':payload.scope;scopedAmount({amountMinor:0,businessPercent:0},scope);const currency=payload.currency===undefined?state.currency:payload.currency;if(currency!==state.currency)throw new DomainError('The scenario must use the workspace currency; no conversion is assumed.');
+ const includeVariableIncome=payload.includeVariableIncome===undefined?false:payload.includeVariableIncome;if(typeof includeVariableIncome!=='boolean')throw new DomainError('Choose whether to include variable income.');const result={scope,currency,includeVariableIncome};
+ for(const key of capacityFields){const value=payload[key]??null;if(value!==null&&(!Number.isSafeInteger(value)||value<0||value>100000000))throw new DomainError('Scenario money must be nonnegative integer minor units or unknown.');result[key]=value}return result;
+}
+export function calculateCapacity(state,scope='personal'){
+ scopedAmount({amountMinor:0,businessPercent:0},scope);const saved=state.capacityScenario;
+ if(!saved||saved.scope!==scope)return {type:'CapacityScenario',schemaVersion:1,status:'needs_input',scope,currency:state.currency,monthlyCapacityMinor:null,cashHeadroomAfterPurchaseMinor:null,guaranteedIncome:false,question:'Add your fictional income, costs and reserve assumptions in Capacity. No income or balance is inferred from spending records.'};
+ const values=capacitySettings(state,saved),required=['regularIncomeMinor','committedCostsMinor','livingCostsMinor','savingsReserveMinor'];if(values.includeVariableIncome)required.push('variableIncomeMinor');const missing=required.filter(k=>values[k]===null);
+ const income=values.regularIncomeMinor===null||(values.includeVariableIncome&&values.variableIncomeMinor===null)?null:values.regularIncomeMinor+(values.includeVariableIncome?values.variableIncomeMinor:0),costKeys=required.slice(1,4),costs=costKeys.some(k=>values[k]===null)?null:costKeys.reduce((sum,k)=>sum+values[k],0),capacity=income===null||costs===null?null:income-costs;
+ const cashKeys=['availableBalanceMinor','protectedBalanceMinor','oneOffCostMinor'],cashMissing=cashKeys.filter(k=>values[k]===null),cash=cashMissing.length?null:values.availableBalanceMinor-values.protectedBalanceMinor-values.oneOffCostMinor;
+ const parts=new Intl.DateTimeFormat('en-NZ',{timeZone:state.timezone??'Pacific/Auckland',year:'numeric',month:'2-digit'}).formatToParts(new Date(state.asOf??Date.now()));const part=type=>parts.find(p=>p.type===type).value;
+ return {type:'CapacityScenario',schemaVersion:1,status:missing.length?'needs_input':'completed',scope,currency:values.currency,inputs:values,period:`${part('year')}-${part('month')}`,timezone:state.timezone??'Pacific/Auckland',calculationId:`capacity:${state.id}:${state.version}:${scope}`,incomeMinor:income,monthlyOutgoingsMinor:costs,monthlyCapacityMinor:capacity,cashHeadroomAfterPurchaseMinor:cash,missingInputs:missing,missingCashInputs:cashMissing,guaranteedIncome:false,dataBasis:'user_entered_hypothetical_assumptions',assumptions:['Inputs are fictional, user-entered assumptions, not verified bank evidence.',values.includeVariableIncome?'Variable income is included as an uncertain scenario assumption.':'Variable income is excluded.','Monthly cash flow and current balance are shown separately, never added together.','Costs must not be counted in both commitments and day-to-day spending.','A positive estimate is not a guarantee of affordability.']};
 }

@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 from folio_api.demo_domain import (
     DomainError,
     compare_months,
+    calculate_capacity,
     effective_transactions,
     goal_baseline,
     goal_progress,
@@ -172,14 +173,7 @@ def make_tool_executor(state, scope):
                 "action": "Save goal only after the person confirms the preview.",
             }
         if name == "calculate_capacity":
-            return {
-                "status": "needs_input",
-                "question": (
-                    "The demo has spending records but no verified income or balance history. "
-                    "What income and buffer should the scenario use?"
-                ),
-                "guaranteedIncome": False,
-            }
+            return calculate_capacity(state, scope)
         if name == "retrieve_examples":
             return {
                 "status": "completed",

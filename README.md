@@ -4,7 +4,7 @@ Fresh hackathon rebuild: a source-grounded finance workspace for web, Mac and Li
 
 ## Current state
 
-This is an implementation in progress, not a completed financial service. The React interface, exact synthetic comparisons, review, reversible splits, goals, scoped correction memory and activity work through the API. Live model use stays disabled until its server-side key and usage approval are configured. There are no fabricated model responses or live bank badges.
+This is an implementation in progress, not a completed financial service. The React interface, exact synthetic comparisons, review, reversible splits, goals, explicitly hypothetical income/capacity scenarios, scoped correction memory and activity work through the API. Live model use stays disabled until its server-side key and usage approval are configured. There are no fabricated model responses or live bank badges.
 
 See [release acceptance](docs/acceptance-status.md) for the full unfinished requirements. CSV import, recurring/digest workflows, verified phone-plan research, production banking, full held-out evaluation and signed native releases are not complete.
 
