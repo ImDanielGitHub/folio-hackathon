@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.build/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.sqlite*
+.DS_Store
+.build-scratch/
+
+# Sites build output and deployment metadata
+/dist/
+/.sites-runtime/

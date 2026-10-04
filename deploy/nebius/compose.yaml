@@ -1,0 +1,41 @@
+# Reviewed source only. No infrastructure has been provisioned or deployed.
+# Requires an approved CPU VM and existing Managed PostgreSQL private endpoint.
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/nebius/Dockerfile.api
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      FOLIO_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set the approved PostgreSQL URL with sslmode=verify-full}
+      FOLIO_ALLOWED_ORIGINS: https://${FOLIO_DOMAIN:?Set the approved demo domain}
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      NEBIUS_TIMEOUT_SECONDS: 45
+      PGSSLROOTCERT: /run/certs/postgresql-ca.pem
+    volumes:
+      - ${POSTGRES_CA_FILE:?Set the verified Nebius database CA file}:/run/certs/postgresql-ca.pem:ro
+    expose: ["8080"]
+    mem_limit: 768m
+    cpus: 1.0
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      FOLIO_DOMAIN: ${FOLIO_DOMAIN:?Set the approved demo domain}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../../apps/web-demo/dist:/srv/web:ro
+      - gateway_data:/data
+      - gateway_config:/config
+    depends_on: [api]
+    mem_limit: 256m
+    cpus: 0.5
+volumes:
+  gateway_data:
+  gateway_config:

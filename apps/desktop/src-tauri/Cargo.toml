@@ -1,0 +1,14 @@
+[package]
+name = "folio-desktop"
+version = "0.1.0"
+description = "Folio shared React desktop shell"
+authors = ["Folio contributors"]
+license = "MIT"
+edition = "2021"
+build = "build.rs"
+
+[build-dependencies]
+tauri-build = { version = "=2.7.1", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.1", features = [] }

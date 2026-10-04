@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {prepareOperation,allocationPreview} from '../apps/web-demo/src/operations.ts';
+test('retry keeps original key/version for uncertain commit',()=>{const first=prepareOperation(null,'one',1,'save_goal',{limitMinor:50000}),retry=prepareOperation(first,'one',2,'save_goal',{limitMinor:50000});assert.deepEqual(retry,first);assert.notEqual(prepareOperation(first,'two',1,'save_goal',{limitMinor:50000}).command.operationId,first.command.operationId);assert.notEqual(prepareOperation(first,'one',1,'save_goal',{limitMinor:40000}).command.operationId,first.command.operationId)});
+test('refund preview preserves positive sign and remainder',()=>{assert.deepEqual(allocationPreview(4948,60),[2968,1980]);assert.deepEqual(allocationPreview(-4948,60),[-2968,-1980]);assert.equal(allocationPreview(-4948,NaN),null);assert.equal(allocationPreview(-4948,101),null)});

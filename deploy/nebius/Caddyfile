@@ -1,0 +1,20 @@
+{$FOLIO_DOMAIN} {
+    encode zstd gzip
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        X-Frame-Options DENY
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    }
+    @backend path /v1/* /health /ready
+    handle @backend {
+        reverse_proxy api:8080 {
+            flush_interval -1
+        }
+    }
+    handle {
+        root * /srv/web
+        try_files {path} /index.html
+        file_server
+    }
+}

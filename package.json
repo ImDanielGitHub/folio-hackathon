@@ -1,0 +1,19 @@
+{
+  "name": "folio-hackathon",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "web": "npm --prefix apps/web-demo run dev",
+    "build:web": "npm --prefix apps/web-demo run build",
+    "test:api": "cd services/api && uv run pytest -q",
+    "test:web": "node --test tests/*.test.mjs",
+    "build": "node scripts/build-site.mjs",
+    "test:edge": "node --test apps/edge/test/*.test.mjs",
+    "db:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.4",
+    "drizzle-orm": "0.44.5"
+  }
+}

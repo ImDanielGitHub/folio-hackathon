@@ -1,0 +1,8 @@
+node_modules/
+.generated/
+src-tauri/target/
+src-tauri/gen/
+.env
+.env.*
+!.env.example
+.DS_Store

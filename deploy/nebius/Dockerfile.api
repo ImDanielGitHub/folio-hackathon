@@ -1,0 +1,14 @@
+# Build context: repository root. Pin the approved image digest before release.
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app
+WORKDIR /app
+COPY services/api/requirements.lock /app/requirements.lock
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock \
+    && groupadd --gid 10001 folio \
+    && useradd --uid 10001 --gid folio --no-create-home folio
+COPY services/api/folio_api /app/folio_api
+USER 10001:10001
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4)"
+CMD ["uvicorn", "folio_api.app:app", "--host", "0.0.0.0", "--port", "8080", "--no-access-log"]

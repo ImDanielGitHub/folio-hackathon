@@ -1,0 +1,14 @@
+{
+  "name": "@folio/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node script/preflight.mjs",
+    "dev": "node script/run.mjs dev",
+    "build": "node script/run.mjs build",
+    "prepare:release": "node script/prepare-release.mjs"
+  },
+  "devDependencies": { "@tauri-apps/cli": "2.12.0" }
+}
