@@ -206,3 +206,88 @@ def test_pagination_hint_does_not_claim_completion_or_follow_untrusted_url():
     )
     assert result["hasMorePages"] is True and result["coverage"] == "not_established"
     assert result["pendingSnapshotComplete"] is False
+
+
+def test_older_balance_page_cannot_overwrite_newer_prior_snapshot():
+    current = adapter().apply_balances(
+        accounts(), {"Data": {"Balance": [balance(amount="1000.00")]}}
+    )
+    result = adapter().apply_balances(
+        current, {"Data": {"Balance": [balance(amount="9.00", DateTime="2026-09-29T23:30:00Z")]}}
+    )
+    assert result[0]["currentBalanceMinor"] == 100000
+    assert result[0]["currentBalanceAsOf"] == "2026-09-30T23:30:00Z"
+
+
+def test_conflicting_balance_at_prior_snapshot_timestamp_is_rejected():
+    current = adapter().apply_balances(accounts(), {"Data": {"Balance": [balance()]}})
+    with pytest.raises(ValueError):
+        adapter().apply_balances(current, {"Data": {"Balance": [balance(amount="999.00")]}})
+
+
+@pytest.mark.parametrize(
+    "value", ["2026-10-01T00:30:00+00:60", "2026-10-01T00:30:00+24:00", "2026-10-01T003000Z"]
+)
+def test_malformed_timezone_or_timestamp_is_not_silently_normalized(value):
+    with pytest.raises(ValueError):
+        adapter().normalize_transactions(
+            {"Data": {"Transaction": [transaction(BookingDateTime=value)]}},
+            accounts(),
+            timezone="UTC",
+        )
+
+
+def test_same_timestamp_credit_line_warning_cannot_be_erased_by_partial_page():
+    current = adapter().apply_balances(
+        accounts(),
+        {
+            "Data": {
+                "Balance": [balance("InterimAvailable", "1500.00", CreditLine=[{"Included": True}])]
+            }
+        },
+    )
+    merged = adapter().apply_balances(
+        current, {"Data": {"Balance": [balance("InterimAvailable", "1500.00")]}}
+    )
+    assert merged[0]["availableIncludesCredit"] is True
+
+
+def test_same_timestamp_conflicting_credit_disclosure_is_rejected():
+    current = adapter().apply_balances(
+        accounts(),
+        {
+            "Data": {
+                "Balance": [balance("InterimAvailable", "1500.00", CreditLine=[{"Included": True}])]
+            }
+        },
+    )
+    with pytest.raises(ValueError):
+        adapter().apply_balances(
+            current,
+            {
+                "Data": {
+                    "Balance": [
+                        balance("InterimAvailable", "1500.00", CreditLine=[{"Included": False}])
+                    ]
+                }
+            },
+        )
+
+
+def test_sub_microsecond_precision_is_explicitly_unsupported_not_rounded():
+    with pytest.raises(ValueError, match="precision is not supported"):
+        adapter().normalize_transactions(
+            {
+                "Data": {
+                    "Transaction": [transaction(BookingDateTime="2026-10-01T00:30:00.1234567Z")]
+                }
+            },
+            accounts(),
+            timezone="UTC",
+        )
+    result = adapter().normalize_transactions(
+        {"Data": {"Transaction": [transaction(BookingDateTime="2026-10-01T00:30:00.123456000Z")]}},
+        accounts(),
+        timezone="UTC",
+    )
+    assert result["keyed"][0]["sourceBookingDateTime"] == "2026-10-01T00:30:00.123456000Z"

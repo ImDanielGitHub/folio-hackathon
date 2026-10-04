@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import re
 from copy import deepcopy
-from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
+
+from folio_api.bank_values import parse_timestamp
 
 STANDARD = "Payments NZ Account Information v2.3.3"
 SOURCE = "https://paymentsnz.atlassian.net/wiki/spaces/PaymentsNZAPIStandards/pages/1909098410"
@@ -52,15 +53,7 @@ def _id(value):
 
 
 def _time(value):
-    if not isinstance(value, str) or "T" not in value or len(value) > 40:
-        raise ValueError("Explicit ISO date-time with timezone required.")
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError as error:
-        raise ValueError("Invalid provider date-time.") from error
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise ValueError("Provider date-time must include a timezone.")
-    return parsed
+    return parse_timestamp(value)
 
 
 def _amount(row, currency):
@@ -137,6 +130,13 @@ def apply_balances(accounts, payload):
             continue
         prefix = "current" if kind == "InterimBooked" else "available"
         target = by_id[aid]
+        prior_as_of = target.get(f"{prefix}BalanceAsOf")
+        if prior_as_of:
+            prior_time = _time(prior_as_of)
+            if when < prior_time:
+                continue
+            if when == prior_time and minor != target.get(f"{prefix}BalanceMinor"):
+                raise ValueError("Conflicting balance at prior snapshot timestamp.")
         target[f"{prefix}BalanceMinor"] = minor
         target[f"{prefix}BalanceType"] = kind
         target[f"{prefix}BalanceAsOf"] = row["DateTime"]
@@ -150,9 +150,14 @@ def apply_balances(accounts, payload):
                 )
             ):
                 raise ValueError("Invalid credit-line disclosure.")
-            target["availableIncludesCredit"] = (
-                None if credit is None else any(c["Included"] for c in credit)
-            )
+            included = None if credit is None else any(c["Included"] for c in credit)
+            old_credit = target.get("availableIncludesCredit")
+            if prior_as_of and when == _time(prior_as_of):
+                if included is None:
+                    included = old_credit
+                elif old_credit is not None and included != old_credit:
+                    raise ValueError("Conflicting credit inclusion at prior snapshot timestamp.")
+            target["availableIncludesCredit"] = included
     return results
 
 

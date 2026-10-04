@@ -9,6 +9,7 @@ Status checked 4 October 2026. This is an implementation and test record, not a 
 - Original fictional fixtures, created for this repository. No bank sandbox response or customer data is included.
 - Exact decimal-to-minor-unit conversion, explicit credit/debit signs and currency checks. Extra decimal zeroes are retained; genuine fractions of a cent are quarantined without rounding.
 - Stable provider identities remain opaque. Booked entries without a stable transaction ID are quarantined, not assigned a guessed fingerprint.
+- Strict timezone offsets and stale-balance fences prevent a malformed or older snapshot from moving the ledger backwards. Conflicting credit-line disclosure at the same source timestamp is rejected. Source timestamps beyond microsecond precision fail explicitly as unsupported unless the extra digits are all zero; no sub-microsecond ordering is silently rounded.
 - Source booking timestamp retained; display date is converted into the supplied workspace timezone. Booking time is not labelled as purchase time.
 - Booked and available balances remain separate. Available funds may include a credit facility. Neither is summed with expected/end-of-day balances.
 - Committed cursors/checkpoints, idempotent operation receipts, atomic batches, source revisions and removal tombstones. Account selection and currency cannot silently change during a connection.

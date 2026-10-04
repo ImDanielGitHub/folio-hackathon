@@ -422,3 +422,153 @@ def test_partial_pending_page_cannot_replace_authoritative_snapshot(tmp_path):
             "workspace-one", connection, "one", None, normalized_batch(added=[], pendingSnapshot=[])
         )
     assert db.view("workspace-one", connection)["cursor"] is None
+
+
+def test_stale_balance_cannot_override_committed_import(tmp_path):
+    db, connection = neutral_ledger(tmp_path)
+    account = normalized_account(
+        transactionAvailability="available",
+        currentBalanceType="InterimBooked",
+        currentBalanceAsOf="2026-09-30T23:30:00Z",
+    )
+    db.apply_normalized(
+        "workspace-one", connection, "one", None, normalized_batch(accounts=[account])
+    )
+    stale = {**account, "currentBalanceAsOf": "2026-09-29T23:30:00Z", "currentBalanceMinor": 500}
+    with pytest.raises(ValueError):
+        db.apply_normalized(
+            "workspace-one",
+            connection,
+            "two",
+            "page-one",
+            normalized_batch(accounts=[stale], added=[], nextCursor="two"),
+        )
+    assert db.view("workspace-one", connection)["accounts"][0]["currentBalanceMinor"] == 100050
+
+
+def test_balance_omission_cannot_erase_timestamped_committed_position(tmp_path):
+    db, connection = neutral_ledger(tmp_path)
+    account = normalized_account(
+        transactionAvailability="available",
+        currentBalanceType="InterimBooked",
+        currentBalanceAsOf="2026-09-30T23:30:00Z",
+    )
+    db.apply_normalized(
+        "workspace-one", connection, "one", None, normalized_batch(accounts=[account])
+    )
+    db.apply_normalized(
+        "workspace-one",
+        connection,
+        "two",
+        "page-one",
+        normalized_batch(
+            accounts=[normalized_account(currentBalanceMinor=None)], added=[], nextCursor="two"
+        ),
+    )
+    saved = db.view("workspace-one", connection)["accounts"][0]
+    assert (
+        saved["currentBalanceMinor"] == 100050
+        and saved["currentBalanceAsOf"] == account["currentBalanceAsOf"]
+    )
+
+
+def test_stable_transaction_identity_cannot_move_accounts_or_currencies(tmp_path):
+    db, connection = neutral_ledger(tmp_path)
+    selection = [
+        normalized_account(transactionAvailability="available"),
+        normalized_account(
+            accountId="second-account", currency="USD", transactionAvailability="available"
+        ),
+    ]
+    db.apply_normalized(
+        "workspace-one", connection, "one", None, normalized_batch(accounts=selection)
+    )
+    with pytest.raises(ValueError):
+        db.apply_normalized(
+            "workspace-one",
+            connection,
+            "two",
+            "page-one",
+            normalized_batch(
+                accounts=selection,
+                added=[],
+                modified=[normalized_transaction(accountId="second-account", currency="USD")],
+                nextCursor="two",
+            ),
+        )
+    assert db.view("workspace-one", connection)["netPostedMinorByCurrency"] == {"NZD": -1234}
+
+
+def test_receipt_storage_key_is_bounded_for_maximum_public_identifiers(tmp_path):
+    from sqlalchemy import select
+
+    db, _ = neutral_ledger(tmp_path)
+    workspace = "w" * 80
+    connection = db.create_connection(workspace, mode="fixture", provider="test")
+    db.apply_normalized(workspace, connection, "o" * 120, None, normalized_batch())
+    with db.engine.connect() as con:
+        key = con.execute(select(module().receipts.c.id)).scalar_one()
+    assert len(key) <= 200
+
+
+def test_committed_booked_transaction_cannot_regress_to_pending(tmp_path):
+    db, connection = neutral_ledger(tmp_path)
+    db.apply_normalized("workspace-one", connection, "one", None, normalized_batch())
+    with pytest.raises(ValueError):
+        db.apply_normalized(
+            "workspace-one",
+            connection,
+            "two",
+            "page-one",
+            normalized_batch(
+                added=[], modified=[normalized_transaction(status="pending")], nextCursor="two"
+            ),
+        )
+    assert db.view("workspace-one", connection)["netPostedMinorByCurrency"] == {"NZD": -1234}
+
+
+def test_same_timestamp_missing_credit_disclosure_keeps_known_warning(tmp_path):
+    db, connection = neutral_ledger(tmp_path)
+    account = normalized_account(
+        transactionAvailability="available",
+        availableBalanceMinor=150000,
+        availableBalanceType="InterimAvailable",
+        availableBalanceAsOf="2026-09-30T23:30:00Z",
+        availableIncludesCredit=True,
+    )
+    db.apply_normalized(
+        "workspace-one", connection, "one", None, normalized_batch(accounts=[account])
+    )
+    without = {**account, "availableIncludesCredit": None}
+    db.apply_normalized(
+        "workspace-one",
+        connection,
+        "two",
+        "page-one",
+        normalized_batch(accounts=[without], added=[], nextCursor="two"),
+    )
+    assert db.view("workspace-one", connection)["accounts"][0]["availableIncludesCredit"] is True
+
+
+def test_same_timestamp_conflicting_credit_disclosure_rolls_back(tmp_path):
+    db, connection = neutral_ledger(tmp_path)
+    account = normalized_account(
+        transactionAvailability="available",
+        availableBalanceMinor=150000,
+        availableBalanceType="InterimAvailable",
+        availableBalanceAsOf="2026-09-30T23:30:00Z",
+        availableIncludesCredit=True,
+    )
+    db.apply_normalized(
+        "workspace-one", connection, "one", None, normalized_batch(accounts=[account])
+    )
+    with pytest.raises(ValueError):
+        db.apply_normalized(
+            "workspace-one",
+            connection,
+            "two",
+            "page-one",
+            normalized_batch(
+                accounts=[{**account, "availableIncludesCredit": False}], added=[], nextCursor="two"
+            ),
+        )

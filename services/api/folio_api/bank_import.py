@@ -17,6 +17,8 @@ from uuid import uuid4
 
 from sqlalchemy import Column, Integer, MetaData, String, Table, Text, select, update
 
+from folio_api.bank_values import parse_timestamp
+
 metadata = MetaData()
 connections = Table(
     "bank_import_connections",
@@ -143,9 +145,8 @@ def normalize_account(raw):
             as_of = raw.get(f"{prefix}BalanceAsOf")
             if not isinstance(as_of, str) or len(as_of) > 40:
                 raise ValueError("Missing balance source timestamp.")
-            from datetime import datetime
 
-            parsed = datetime.fromisoformat(as_of.replace("Z", "+00:00"))
+            parsed = parse_timestamp(as_of)
             if parsed.tzinfo is None:
                 raise ValueError("Balance timestamp requires timezone.")
             result[f"{prefix}BalanceAsOf"] = as_of
@@ -154,6 +155,38 @@ def normalize_account(raw):
         raise ValueError("Credit-line inclusion must be explicit or unknown.")
     result["availableIncludesCredit"] = included
     return result
+
+
+def preserve_balance_freshness(incoming, previous):
+    """Never erase known bank positions with missing or stale balance pages."""
+    for prefix in ("current", "available"):
+        field = f"{prefix}BalanceAsOf"
+        old = previous.get(field)
+        if old is None:
+            continue
+        new = incoming.get(field)
+        if new is None:
+            for suffix in ("Minor", "Type", "AsOf"):
+                incoming[f"{prefix}Balance{suffix}"] = previous.get(f"{prefix}Balance{suffix}")
+            if prefix == "available":
+                incoming["availableIncludesCredit"] = previous.get("availableIncludesCredit")
+            continue
+        old_time = parse_timestamp(old)
+        new_time = parse_timestamp(new)
+        if new_time < old_time:
+            raise ValueError("Stale balance snapshot cannot replace committed position.")
+        if (
+            new_time == old_time
+            and incoming[f"{prefix}BalanceMinor"] != previous[f"{prefix}BalanceMinor"]
+        ):
+            raise ValueError("Conflicting balance at committed source timestamp.")
+        if new_time == old_time and prefix == "available":
+            old_credit = previous.get("availableIncludesCredit")
+            new_credit = incoming.get("availableIncludesCredit")
+            if new_credit is None:
+                incoming["availableIncludesCredit"] = old_credit
+            elif old_credit is not None and new_credit != old_credit:
+                raise ValueError("Conflicting credit inclusion at committed source timestamp.")
 
 
 def normalize_transaction(raw, provider, item_ref, accounts, *, ephemeral=False):
@@ -214,12 +247,10 @@ def normalize_transaction(raw, provider, item_ref, accounts, *, ephemeral=False)
         "analysisEligible": False,
     }
     if "sourceBookingDateTime" in raw:
-        from datetime import datetime
-
         value = raw["sourceBookingDateTime"]
         if not isinstance(value, str) or len(value) > 40:
             raise ValueError("Invalid source booking timestamp.")
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = parse_timestamp(value)
         if parsed.tzinfo is None or raw.get("dateBasis") != "booking":
             raise ValueError("Source booking date/time basis is ambiguous.")
         result.update(sourceBookingDateTime=value, dateBasis="booking")
@@ -301,7 +332,9 @@ class SandboxImportLedger:
         if len(raw_request) > 2_000_000:
             raise ValueError("Import batch exceeds the supported bound.")
         fingerprint = hashlib.sha256(raw_request.encode()).hexdigest()
-        receipt_key = f"{workspace_id}:{connection_id}:{operation_id}"
+        receipt_key = hashlib.sha256(
+            json.dumps([workspace_id, connection_id, operation_id]).encode()
+        ).hexdigest()
         with self.engine.begin() as con:
             row = self._row(con, workspace_id, connection_id)
             state = json.loads(row["state"])
@@ -325,6 +358,11 @@ class SandboxImportLedger:
                 raise ValueError("Select a bounded list of provider accounts.")
             if normalized:
                 account_projection = [normalize_account(account) for account in account_rows]
+                prior_accounts = {a["accountId"]: a for a in state["accounts"]}
+                for account in account_projection:
+                    preserve_balance_freshness(
+                        account, prior_accounts.get(account["accountId"], {})
+                    )
                 accounts = {account["accountId"]: account for account in account_projection}
                 account_ids = set(accounts)
                 old_selection = {(a["accountId"], a.get("currency")) for a in state["accounts"]}
@@ -384,6 +422,24 @@ class SandboxImportLedger:
                 )
                 tid = record["providerTransactionId"]
                 previous = records.get(tid)
+                if (
+                    previous
+                    and previous["current"] is not None
+                    and any(
+                        previous["current"][field] != record[field]
+                        for field in ("accountId", "currency")
+                    )
+                ):
+                    raise ValueError(
+                        "Stable transaction identity cannot change account or currency."
+                    )
+                if (
+                    previous
+                    and previous["current"] is not None
+                    and previous["current"]["status"] == "posted_unreviewed"
+                    and record["status"] == "pending"
+                ):
+                    raise ValueError("Booked source transaction cannot regress to pending.")
                 if previous is None:
                     records[tid] = {"current": record, "versions": [], "removed": False}
                     added += 1
@@ -395,6 +451,13 @@ class SandboxImportLedger:
                 replacement = record["replacesPendingId"]
                 if not record["status"].startswith("pending") and replacement in records:
                     old = records[replacement]
+                    if old["current"] and any(
+                        old["current"][field] != record[field]
+                        for field in ("accountId", "currency")
+                    ):
+                        raise ValueError(
+                            "Pending replacement belongs to a different account/currency."
+                        )
                     if old["current"] and old["current"]["status"] == "pending":
                         old["removed"] = True
                         old["removalReason"] = "posted_replacement"
